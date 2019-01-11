@@ -3,7 +3,66 @@
 """MNIST数据处理"""
 
 import os
+import gzip
+import struct
 import urllib3
+import numpy as np
+
+
+# 数据下载链接
+urls = [
+    "http://yann.lecun.com/exdb/mnist/train-images-idx3-ubyte.gz",
+    "http://yann.lecun.com/exdb/mnist/train-labels-idx1-ubyte.gz",
+    "http://yann.lecun.com/exdb/mnist/t10k-images-idx3-ubyte.gz",
+    "http://yann.lecun.com/exdb/mnist/t10k-labels-idx1-ubyte.gz"
+]
+
+
+def parse_images(file_bytes):
+    """ 解析图片集
+    Args:
+        file_bytes (bytes): 解压后的二进制数据
+    Returns:
+        list[np.ndarray]: 图片列表，每张图片为28×28的矩阵
+    """
+    offset = 4   # 跳过前4个字节（前4字节为校验值）
+    img_cnt, rows, cols = struct.unpack_from('>III', file_bytes, offset)
+
+    # 图片内容从第16个字节开始
+    offset = 16
+    imgs = []
+    pixels = rows * cols
+    format_str = f">{pixels}B"   # 每个像素占1个字节
+    for i in range(img_cnt):
+        # 读取图片像素
+        img = struct.unpack_from(format_str, file_bytes, offset)
+        offset += pixels
+
+        # 将图片转换为28*28矩阵
+        img = np.array(img).reshape((rows, cols))
+        imgs.append(img)
+
+    return imgs
+
+
+def parse_labels(file_bytes):
+    """ 解析标签集
+    Args:
+        file_bytes (bytes): 解压后的二进制数据
+    Returns:
+        list[int]: 标签列表，标签值为0~9
+    """
+    offset = 4
+    label_cnt = struct.unpack_from('>I', file_bytes, offset)[0]
+
+    offset = 8
+    labels = []
+    for i in range(label_cnt):
+        label = int(struct.unpack_from(">B", file_bytes, offset)[0])
+        offset += 1
+        labels.append(label)
+
+    return labels
 
 
 class Mnist(object):
@@ -17,20 +76,21 @@ class Mnist(object):
             data_dir += '/'
         self.data_dir = data_dir
 
-        # 数据下载链接
-        self.urls = [
-            "http://yann.lecun.com/exdb/mnist/train-images-idx3-ubyte.gz",
-            "http://yann.lecun.com/exdb/mnist/train-labels-idx1-ubyte.gz",
-            "http://yann.lecun.com/exdb/mnist/t10k-images-idx3-ubyte.gz",
-            "http://yann.lecun.com/exdb/mnist/t10k-labels-idx1-ubyte.gz"
-        ]
+        # 训练图片集
+        self.train_images = None
+        # 训练标签集
+        self.train_labels = None
+        # 测试图片集
+        self.test_images = None
+        # 测试标签集
+        self.test_labels = None
 
     def download(self):
         """下载数据"""
         if not os.path.exists(self.data_dir):
             os.makedirs(self.data_dir)
 
-        for url in self.urls:
+        for url in urls:
             fpath = self.data_dir + url.split('/')[-1]
             if os.path.exists(fpath):
                 continue
@@ -43,10 +103,37 @@ class Mnist(object):
             response.release_conn()
             print("完成")
 
+    def parse(self):
+        """解析下载的数据"""
+        self.download()
+
+        train_images_path = self.data_dir + "train-images-idx3-ubyte.gz"
+        train_labels_path = self.data_dir + "train-labels-idx1-ubyte.gz"
+        test_images_path = self.data_dir + "t10k-images-idx3-ubyte.gz"
+        test_labels_path = self.data_dir + "t10k-labels-idx1-ubyte.gz"
+
+        with gzip.GzipFile(train_images_path) as f:
+            train_images_data = f.read()
+            self.train_images = parse_images(train_images_data)
+
+        with gzip.GzipFile(train_labels_path) as f:
+            train_labels_data = f.read()
+            self.train_labels = parse_labels(train_labels_data)
+
+        with gzip.GzipFile(test_images_path) as f:
+            test_images_data = f.read()
+            self.test_images = parse_images(test_images_data)
+
+        with gzip.GzipFile(test_labels_path) as f:
+            test_labels_data = f.read()
+            self.test_labels = parse_labels(test_labels_data)
+
 
 def test():
     data = Mnist('./cache/')
     data.download()
+    data.parse()
+    print(len(data.train_images))
 
 
 if __name__ == '__main__':
