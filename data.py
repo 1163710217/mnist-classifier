@@ -18,6 +18,30 @@ urls = [
 ]
 
 
+def download(url, save_path):
+    """ 下载MNIST数据并保存到本地
+    Args:
+        url (str): 下载链接
+        save_path (str): 保存路径
+    """
+    http = urllib3.PoolManager()
+    response = http.request('GET', url)
+    with open(save_path, 'wb') as f:
+        f.write(response.data)
+    response.release_conn()
+
+
+def uncompress(gz_file):
+    """ 解压缩gz文件
+    Args:
+        gz_file (str): 压缩文件路径
+    Returns:
+        bytes: 解压后的二进制内容
+    """
+    with gzip.GzipFile(gz_file) as f:
+        return f.read()
+
+
 def parse_images(file_bytes):
     """ 解析图片集
     Args:
@@ -96,11 +120,7 @@ class Mnist(object):
                 continue
 
             print(fpath, end="...")
-            http = urllib3.PoolManager()
-            response = http.request('GET', url)
-            with open(fpath, 'wb') as f:
-                f.write(response.data)
-            response.release_conn()
+            download(url, fpath)
             print("完成")
 
     def parse(self):
@@ -112,21 +132,10 @@ class Mnist(object):
         test_images_path = self.data_dir + "t10k-images-idx3-ubyte.gz"
         test_labels_path = self.data_dir + "t10k-labels-idx1-ubyte.gz"
 
-        with gzip.GzipFile(train_images_path) as f:
-            train_images_data = f.read()
-            self.train_images = parse_images(train_images_data)
-
-        with gzip.GzipFile(train_labels_path) as f:
-            train_labels_data = f.read()
-            self.train_labels = parse_labels(train_labels_data)
-
-        with gzip.GzipFile(test_images_path) as f:
-            test_images_data = f.read()
-            self.test_images = parse_images(test_images_data)
-
-        with gzip.GzipFile(test_labels_path) as f:
-            test_labels_data = f.read()
-            self.test_labels = parse_labels(test_labels_data)
+        self.train_images = parse_images(uncompress(train_images_path))
+        self.train_labels = parse_labels(uncompress(train_labels_path))
+        self.test_images = parse_images(uncompress(test_images_path))
+        self.test_labels = parse_labels(uncompress(test_labels_path))
 
 
 def test():
