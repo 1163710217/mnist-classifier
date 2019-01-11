@@ -101,13 +101,13 @@ class Mnist(object):
         self.data_dir = data_dir
 
         # 训练图片集
-        self.train_images = None
+        self._train_images = []
         # 训练标签集
-        self.train_labels = None
+        self._train_labels = []
         # 测试图片集
-        self.test_images = None
+        self._test_images = []
         # 测试标签集
-        self.test_labels = None
+        self._test_labels = []
 
     def download(self):
         """下载数据"""
@@ -132,17 +132,41 @@ class Mnist(object):
         test_images_path = self.data_dir + "t10k-images-idx3-ubyte.gz"
         test_labels_path = self.data_dir + "t10k-labels-idx1-ubyte.gz"
 
-        self.train_images = parse_images(uncompress(train_images_path))
-        self.train_labels = parse_labels(uncompress(train_labels_path))
-        self.test_images = parse_images(uncompress(test_images_path))
-        self.test_labels = parse_labels(uncompress(test_labels_path))
+        self._train_images = parse_images(uncompress(train_images_path))
+        self._train_labels = parse_labels(uncompress(train_labels_path))
+        self._test_images = parse_images(uncompress(test_images_path))
+        self._test_labels = parse_labels(uncompress(test_labels_path))
+
+    @property
+    def train_images(self):
+        if not self._train_images:
+            self.parse()
+        return self._train_images
+
+    @property
+    def train_labels(self):
+        if not self._train_labels:
+            self.parse()
+        return self._train_labels
+
+    @property
+    def test_images(self):
+        if not self._test_images:
+            self.parse()
+        return self._test_images
+
+    @property
+    def test_labels(self):
+        if not self._test_labels:
+            self.parse()
+        return self._test_labels
 
 
 def test():
     data = Mnist('./cache/')
     data.download()
     data.parse()
-    print(len(data.train_images))
+    print(len(data._train_images))
 
 
 if __name__ == '__main__':
