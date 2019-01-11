@@ -1,2 +1,5 @@
-# mnist-classifier
-MNIST分类器
+# MNIST分类器
+
+|   文件   |     说明      |
+|:--------|:-------------|
+| data.py | MNIST数据处理 |
