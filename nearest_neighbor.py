@@ -7,22 +7,15 @@ import numpy as np
 from sklearn.metrics import confusion_matrix
 
 
-def l1(img1, img2):
-    """ 计算图片间的L1距离
-    Args:
-        img1 (np.ndarray): 二维数组（图片像素为28×28）
-        img2 (np.ndarray): 二维数组
-    Returns:
-        float: 图片L1距离
-    """
-    return np.sum(abs(img1 - img2))
-
-
 class NearestNeighbor(object):
     def __init__(self):
-        """ 最近邻模型 """
-        self.train_images = []
-        self.train_labels = []
+        """ 最近邻模型
+            为方便计算 # 将每张28*28的二维图片转为长度为748的一维向量，
+            用二维矩阵存放所有训练集图片，维度为(N, 748)，N为图片数量。
+            用一维向量存放训练集标签，维度为(N,)。
+        """
+        self.train_images = None
+        self.train_labels = None
 
 
 def train(train_images, train_labels):
@@ -34,8 +27,8 @@ def train(train_images, train_labels):
         NearestNeighbor: 训练好的模型
     """
     model = NearestNeighbor()
-    model.train_images = train_images
-    model.train_labels = train_labels
+    model.train_images = np.array([image.flatten() for image in train_images])
+    model.train_labels = np.array(train_labels)
     return model
 
 
@@ -47,7 +40,9 @@ def predict(model, test_image):
     Returns:
         int: 预测的类别（0~9）
     """
-    all_l1 = [l1(test_image, image) for image in model.train_images]
+    # 将测试图片转换为一维向量，以便计算
+    test_image = test_image.flatten()
+    all_l1 = np.sum(np.abs(model.train_images - test_image), axis=1)
     similar_image_index = np.argmin(all_l1)
     label = model.train_labels[similar_image_index]
     return label
@@ -55,14 +50,12 @@ def predict(model, test_image):
 
 def get_confusion_matrix(model, test_images, test_labels):
     """ 用测试集评估模型，得到混淆矩阵
-
     Args:
         model (NearestNeighbor): 训练好的模型
         test_images (list[np.ndarray]): 测试集图片
         test_labels (list[int]): 测试集标签
-
     Returns:
-
+        np.array: 混淆矩阵
     """
     pred_labels = []
     for i, image in enumerate(test_images):
@@ -78,7 +71,7 @@ def test():
     from data import Mnist
     mnist = Mnist("./cache/")
     model = train(mnist.train_images, mnist.train_labels)
-    confmat = get_confusion_matrix(model, mnist.test_images[:500], mnist.test_labels[:500])
+    confmat = get_confusion_matrix(model, mnist.test_images, mnist.test_labels[:500])
     print(confmat)
 
 
