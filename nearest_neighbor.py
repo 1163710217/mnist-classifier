@@ -71,7 +71,7 @@ def test():
     from data import Mnist
     mnist = Mnist("./cache/")
     model = train(mnist.train_images, mnist.train_labels)
-    confmat = get_confusion_matrix(model, mnist.test_images, mnist.test_labels[:500])
+    confmat = get_confusion_matrix(model, mnist.test_images, mnist.test_labels)
     print(confmat)
 
 
