@@ -4,7 +4,7 @@
 
 
 import numpy as np
-from sklearn.metrics import confusion_matrix
+from confmat import ConfMat
 
 
 class NearestNeighbor(object):
@@ -61,10 +61,10 @@ def get_confusion_matrix(model, test_images, test_labels):
     for i, image in enumerate(test_images):
         pred_labels.append(predict(model, image))
 
-        if (i+1) % 100 == 0:
+        if (i+1) % 10 == 0:
             print(i)
 
-    return confusion_matrix(test_labels, pred_labels)
+    return ConfMat(test_labels, pred_labels)
 
 
 def test():
@@ -72,7 +72,7 @@ def test():
     mnist = Mnist("./cache/")
     model = train(mnist.train_images, mnist.train_labels)
     confmat = get_confusion_matrix(model, mnist.test_images, mnist.test_labels)
-    print(confmat)
+    print(confmat.matrix_str())
 
 
 if __name__ == '__main__':
